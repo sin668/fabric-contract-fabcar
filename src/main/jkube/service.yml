@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: ${project.artifactId}
+  namespace: ${jkube.namespace}
+spec:
+  ports:
+    - name: ${project.artifactId}
+      protocol: TCP
+      port: 7052
+      targetPort: 7052
+  internalTrafficPolicy: Cluster
+  type: ClusterIP
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app: ${project.artifactId}

@@ -1,0 +1,99 @@
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  annotations:
+    app.kubernetes.io/vcs-uri: 'git@github.com:snowdrop/rest-http-example.git'
+  name: ${project.artifactId}
+  namespace: ${fabric8.namespace}
+  labels:
+    app: fabric-chaincode
+    chaincode: ${project.artifactId}
+    version: ${project.version}
+    app.kubernetes.io/name: ${project.artifactId}
+    app.openshift.io/runtime-version: ${fabric-chaincode-java.version}
+    group: ${project.groupId}
+    provider: fabric8
+spec:
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - chaincode
+        from:
+          kind: ImageStreamTag
+          namespace: hlf-operator
+          name: '${project.artifactId}:${project.version}'
+  replicas: 1
+  revisionHistoryLimit: 2
+  test: false
+  selector:
+    app: fabric-chaincode
+    chaincode: ${project.artifactId}
+    group: ${project.groupId}
+    provider: fabric8
+  template:
+    metadata:
+      namespace: ${fabric8.namespace}
+      labels:
+        app: fabric-chaincode
+        chaincode: ${project.artifactId}
+        version: ${project.version}
+        app.kubernetes.io/name: ${project.artifactId}
+        app.openshift.io/runtime-version: ${fabric-chaincode-java.version}
+        group: ${project.groupId}
+        provider: fabric8
+      annotations:
+        app.kubernetes.io/vcs-uri: 'git@github.com:snowdrop/rest-http-example.git'
+    spec:
+      containers:
+        - name: chaincode
+          image: >-
+            image-registry.openshift-image-registry.svc:5000/${fabric8.namespace}/${project.artifactId}:${project.version}
+          env:
+            - name: CHAINCODE_ID
+              value: >-
+                ${fabric.package.id}
+            - name: CORE_CHAINCODE_ID
+              value: >-
+                ${fabric.package.id}
+            - name: CORE_CHAINCODE_ID_NAME
+              value: >-
+                ${fabric.package.id}
+            - name: CHAINCODE_SERVER_ADDRESS
+              value: '0.0.0.0:7052'
+            - name: CORE_CHAINCODE_ADDRESS
+              value: '0.0.0.0:7052'
+            - name: CHAINCODE_TLS_DISABLED
+              value: 'false'
+            - name: CORE_PEER_TLS_ENABLED
+              value: 'true'
+            - name: CORE_TLS_CLIENT_CERT_PATH
+              value: /tmp/src/maven/conf/peer/cert.crt
+            - name: CORE_TLS_CLIENT_KEY_PATH
+              value: /tmp/src/maven/conf/peer/priv.key
+            - name: CORE_PEER_TLS_ROOTCERT_FILE
+              value: /tmp/src/maven/conf/peer/tlsroot.crt
+            - name: CORE_TLS_CLIENT_KEY_FILE
+              value: >-
+                /tmp/src/maven/conf/peer/cert.pem
+            - name: CORE_TLS_CLIENT_CERT_FILE
+              value: >-
+                /tmp/src/maven/conf/peer/cert.pem
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: false
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
